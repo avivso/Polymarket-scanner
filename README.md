@@ -2,7 +2,9 @@ Polymarket Edge Scanner
 Live Black-Scholes edge scanner for Polymarket prediction markets.
 URL
 https://avivso.github.io/Polymarket-scanner-4
+
 What it does
+
 Fetches the top 300 Polymarket markets by volume, prices each one using Black-Scholes, and ranks them by edge — the gap between theoretical fair value and current market price.
 Hit RESCAN anytime to refresh all prices live.
 Signals
