@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Polymarket Edge Scanner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#04070f;color:#dde4f0;font-family:system-ui,sans-serif;padding:16px 12px 60px}
+.wrap{max-width:600px;margin:0 auto}
+.eye{font-family:monospace;font-size:9px;letter-spacing:.2em;color:#2563eb;text-transform:uppercase;margin-bottom:4px}
+.title{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:4px}
+.title b{color:#3b82f6}
+.sub{font-family:monospace;font-size:9px;color:#3a4a65;margin-bottom:14px}
+.btn{background:#0f1829;border:1px solid #2563eb;color:#60a5fa;font-size:10px;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;letter-spacing:.05em;display:inline-flex;align-items:center;gap:6px}
+.btn:active{opacity:.7}
+.btn.spin{opacity:.6;pointer-events:none}
+.errbox{background:#1a0008;border:1px solid #550022;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-family:monospace;font-size:9px;color:#ff6688;display:none}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px}
+.stat{background:#080d18;border:1px solid #0f1829;border-radius:8px;padding:8px 10px}
+.sv{font-family:monospace;font-size:16px;font-weight:700;line-height:1}
+.sl{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#3a4a65;margin-top:3px}
+.frow{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px}
+.fb{background:#080d18;border:1px solid #162035;color:#3a4a65;font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;cursor:pointer;white-space:nowrap}
+.fb.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.fb.on.hy{background:#004d2a;border-color:#00e5a0;color:#00e5a0}
+.fb.on.y{background:#002d1a;border-color:#00aa66;color:#00dd88}
+.fb.on.n{background:#300015;border-color:#881133;color:#ff6688}
+.fb.on.hn{background:#440020;border-color:#ff4466;color:#ff4466}
+.card{background:#080d18;border:1px solid #0f1829;border-left:3px solid;border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer}
+.crow{display:flex;gap:8px}
+.crank{font-family:monospace;font-size:9px;color:#3a4a65;font-weight:700;padding-top:2px;min-width:22px}
+.cbody{flex:1;min-width:0}
+.ctop{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;align-items:flex-start}
+.cq{font-size:12px;font-weight:700;line-height:1.4;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cbadges{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.sig{padding:2px 7px;border-radius:3px;font-family:monospace;font-size:9px;font-weight:700;border:1px solid;white-space:nowrap}
+.prices{display:flex;gap:6px;margin-bottom:8px}
+.pbox{flex:1;background:#04070f;border:1px solid #0f1829;border-radius:7px;padding:7px 9px}
+.prow{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px}
+.plbl{font-family:monospace;font-size:7px;text-transform:uppercase;letter-spacing:1px;color:#3a4a65;margin-bottom:1px}
+.pval{font-family:monospace;font-size:19px;font-weight:700}
+.psub{font-family:monospace;font-size:8px;color:#3a4a65;margin-top:1px}
+.pbar{position:relative;height:3px;background:#1a2540;border-radius:2px}
+.pfill{position:absolute;height:100%;border-radius:2px}
+.ptick{position:absolute;top:-3px;width:2px;height:9px;border-radius:1px}
+.ebox{border:1px solid;border-radius:7px;padding:7px 9px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:68px;gap:2px}
+.elbl{font-family:monospace;font-size:7px;text-transform:uppercase;letter-spacing:1px;opacity:.65}
+.eval{font-family:monospace;font-size:17px;font-weight:700;line-height:1}
+.esub{font-family:monospace;font-size:8px;opacity:.55;margin-top:1px}
+.meta{display:flex;gap:12px;flex-wrap:wrap}
+.mlbl{font-family:monospace;font-size:7px;text-transform:uppercase;letter-spacing:1px;color:#3a4a65}
+.mval{font-family:monospace;font-size:11px;font-weight:700;color:#6b7a95}
+.foot{margin-top:12px;padding:8px 12px;background:#080d18;border:1px solid #0f1829;border-radius:8px;font-family:monospace;font-size:8px;color:#3a4a65;line-height:1.8}
+.loading{text-align:center;padding:40px;color:#3a4a65;font-family:monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+  <div>
+    <div class="eye">Black-Scholes Binary Pricer</div>
+    <div class="title">Polymarket <b>Edge Scanner</b></div>
+    <div class="sub" id="subline">loading live data&hellip;</div>
+  </div>
+  <button class="btn" id="rescanBtn" onclick="doScan()">&#x21BB; RESCAN</button>
+</div>
+
+<div class="errbox" id="errbox"></div>
+
+<div class="stats">
+<div class="stat"><div class="sv" id="st">-</div><div class="sl">Scanned</div></div>
+<div class="stat"><div class="sv" style="color:#00e5a0" id="shy">-</div><div class="sl">Hard YES</div></div>
+<div class="stat"><div class="sv" style="color:#00dd88" id="sy">-</div><div class="sl">YES</div></div>
+<div class="stat"><div class="sv" style="color:#ff6688" id="sn">-</div><div class="sl">NO</div></div>
+<div class="stat"><div class="sv" style="color:#ff4466" id="shn">-</div><div class="sl">Hard NO</div></div>
+</div>
+
+<div class="frow" id="sigrow">
+<button class="fb on" data-sig="ALL">All signals</button>
+<button class="fb hy" data-sig="HARD YES" id="fhy">&#x26A1; Hard YES</button>
+<button class="fb y"  data-sig="YES"      id="fy">&#x2191; YES</button>
+<button class="fb"    data-sig="NEUTRAL">&#x2014; Neutral</button>
+<button class="fb n"  data-sig="NO"       id="fn">&#x2193; NO</button>
+<button class="fb hn" data-sig="HARD NO"  id="fhn">&#x26A1; Hard NO</button>
+</div>
+<div class="frow" id="catrow" style="margin-bottom:14px">
+<button class="fb on" data-cat="ALL">All</button>
+<button class="fb" data-cat="Economy"     style="border-left:3px solid #6366f1">Economy</button>
+<button class="fb" data-cat="Tech"        style="border-left:3px solid #06b6d4">Tech</button>
+<button class="fb" data-cat="Crypto"      style="border-left:3px solid #f59e0b">Crypto</button>
+<button class="fb" data-cat="Geopolitics" style="border-left:3px solid #ef4444">Geopolitics</button>
+<button class="fb" data-cat="Politics"    style="border-left:3px solid #8b5cf6">Politics</button>
+<button class="fb" data-cat="Sports"      style="border-left:3px solid #10b981">Sports</button>
+<button class="fb" data-cat="Culture"     style="border-left:3px solid #ec4899">Culture</button>
+<button class="fb" data-cat="Finance"     style="border-left:3px solid #84cc16">Finance</button>
+</div>
+
+<div id="results"><div class="loading">&#x21BB; fetching live Polymarket data&hellip;</div></div>
+
+<div class="foot">
+BS: V=e<sup>-rT</sup>&middot;N(d&#x2082;), K=0.5, r=5% &middot; Not financial advice
+</div>
+</div>
+
+<script>
+var CC={Economy:"#6366f1",Tech:"#06b6d4",Crypto:"#f59e0b",Geopolitics:"#ef4444",Politics:"#8b5cf6",Sports:"#10b981",Culture:"#ec4899",Finance:"#84cc16"};
+var SC={"HARD YES":{bg:"#001f14",bo:"#005535",ec:"#00e5a0",lb:"BET YES"},"YES":{bg:"#002218",bo:"#005535",ec:"#00dd88",lb:"BET YES"},"NEUTRAL":{bg:"#0a0f1a",bo:"#1a2540",ec:"#6b7a95",lb:"NEUTRAL"},"NO":{bg:"#200010",bo:"#550022",ec:"#ff6688",lb:"BET NO"},"HARD NO":{bg:"#1f0010",bo:"#550022",ec:"#ff4466",lb:"BET NO"}};
+
+// Category detection from event tags/title
+function detectCat(ev) {
+  var t=(ev.title||"").toLowerCase();
+  var tags=JSON.stringify(ev.tags||[]).toLowerCase();
+  var all=t+" "+tags;
+  if(/bitcoin|btc|eth|crypto|solana|doge/.test(all)) return "Crypto";
+  if(/nba|nfl|soccer|tennis|golf|sport|champion|playoff|mvp|league|football|basketball/.test(all)) return "Sports";
+  if(/iran|israel|ukraine|russia|war|ceasefire|nato|military|troops/.test(all)) return "Geopolitics";
+  if(/fed |federal reserve|rate cut|recession|gdp|inflation|tariff|trade deal/.test(all)) return "Economy";
+  if(/election|democrat|republican|congress|senate|president|vote|poll/.test(all)) return "Politics";
+  if(/ai|anthropic|openai|google|claude|gpt|nvidia|tech|apple|microsoft/.test(all)) return "Tech";
+  if(/oscar|grammy|award|film|movie|music|culture|pop/.test(all)) return "Culture";
+  if(/oil|gold|stock|market|nasdaq|s&p|fund|finance|commodity/.test(all)) return "Finance";
+  return "Economy";
+}
+
+// Sigma by category + time
+function getSigma(cat, T) {
+  if(T < 0.01) return 0.80;
+  if(cat==="Crypto") return T<0.1 ? 0.70 : 0.55;
+  if(cat==="Sports") return 0.45;
+  if(cat==="Geopolitics") return T<0.1 ? 0.75 : 0.65;
+  if(cat==="Tech") return T<0.1 ? 0.60 : 0.50;
+  if(cat==="Economy") return T<0.1 ? 0.25 : 0.45;
+  if(cat==="Politics") return 0.45;
+  return 0.50;
+}
+
+function ncdf(x) {
+  var a=[0.254829592,-0.284496736,1.421413741,-1.453152027,1.061405429],p=0.3275911;
+  var s=x<0?-1:1; x=Math.abs(x)/Math.sqrt(2);
+  var t=1/(1+p*x);
+  var y=1-((((a[4]*t+a[3])*t+a[2])*t+a[1])*t+a[0])*t*Math.exp(-x*x);
+  return 0.5*(1+s*y);
+}
+
+function bsPrice(S,si,T,r) {
+  r=r||0.05;
+  S=Math.max(0.005,Math.min(0.995,S));
+  if(!T||T<=0||!si||si<=0) return S;
+  var d2=(Math.log(S/0.5)+(r-si*si/2)*T)/(si*Math.sqrt(T));
+  var raw=Math.exp(-r*T)*ncdf(d2);
+  var blend=Math.min(1,T/0.25);
+  return Math.max(0.005,Math.min(0.995,S*(1-blend)+raw*blend));
+}
+
+function sigLabel(e) {
+  if(e>0.15) return "HARD YES";
+  if(e>0.06) return "YES";
+  if(e<-0.15) return "HARD NO";
+  if(e<-0.06) return "NO";
+  return "NEUTRAL";
+}
+
+function fmtVol(v) {
+  v=+v||0;
+  return v>=1e9?"$"+(v/1e9).toFixed(1)+"B":v>=1e6?"$"+(v/1e6).toFixed(1)+"M":v>=1e3?"$"+(v/1e3).toFixed(0)+"k":"$"+v;
+}
+
+function fmtT(T) {
+  if(T<.003) return Math.round(T*365*24)+"h";
+  if(T<.08)  return Math.round(T*365)+"d";
+  return (T*12).toFixed(1)+"mo";
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+var DATA=[], SIGF="ALL", CATF="ALL";
+
+function processMarkets(events) {
+  var now=Date.now();
+  var out=[];
+  for(var i=0;i<events.length;i++) {
+    var ev=events[i];
+    var evMarkets=ev.markets||[];
+    var evVol=parseFloat(ev.volume||ev.volumeNum||0);
+    var cat=detectCat(ev);
+    for(var j=0;j<evMarkets.length;j++) {
+      var mk=evMarkets[j];
+      if(!mk.active||mk.closed||mk.archived) continue;
+      // Get YES price
+      var prices=[];
+      try{ prices=JSON.parse(mk.outcomePrices||"[]"); }catch(e){}
+      if(!prices.length) continue;
+      var yesP=parseFloat(prices[0]);
+      if(isNaN(yesP)||yesP<=0||yesP>=1) continue;
+      // Time to expiry
+      var endRaw=mk.endDate||mk.end_date||ev.endDate||ev.end_date||"";
+      var T=0;
+      if(endRaw) {
+        var ms=new Date(endRaw).getTime()-now;
+        T=Math.max(0, ms/(1000*60*60*24*365));
+      }
+      if(T<=0) continue; // skip expired
+      var vol=parseFloat(mk.volume||mk.volumeNum||evVol||0);
+      var sigma=getSigma(cat,T);
+      var bsv=bsPrice(yesP,sigma,T);
+      var edge=Math.round((bsv-yesP)*1000)/1000;
+      var aE=Math.abs(edge/Math.max(yesP,0.01)*100);
+      var slug=ev.slug||(ev.id?"event-"+ev.id:"");
+      out.push({
+        q: mk.question||ev.title||"Unknown",
+        url: "https://polymarket.com/event/"+slug,
+        m: Math.round(yesP*1000)/1000,
+        b: Math.round(bsv*1000)/1000,
+        e: edge,
+        si: sigma,
+        T: Math.round(T*1000)/1000,
+        v: Math.round(vol),
+        sg: sigLabel(edge),
+        aE: Math.round(aE*10)/10,
+        c: cat
+      });
+    }
+  }
+  // Sort by abs edge desc
+  out.sort(function(a,b){return b.aE-a.aE;});
+  return out.slice(0,80); // top 80
+}
+
+function showErr(msg) {
+  var el=document.getElementById("errbox");
+  el.textContent=msg;
+  el.style.display="block";
+}
+
+function hideErr() {
+  document.getElementById("errbox").style.display="none";
+}
+
+async function fetchPage(offset) {
+  var proxies=[
+    "https://corsproxy.io/?url=",
+    "https://api.allorigins.win/raw?url="
+  ];
+  var target=encodeURIComponent(
+    "https://gamma-api.polymarket.com/events?active=true&limit=100&offset="+offset+"&order=volume&ascending=false"
+  );
+  for(var i=0;i<proxies.length;i++) {
+    try {
+      var r=await fetch(proxies[i]+target,{signal:AbortSignal.timeout(8000)});
+      if(r.ok) {
+        var j=await r.json();
+        return Array.isArray(j)?j:(j.data||j.results||[]);
+      }
+    } catch(e) {}
+  }
+  return null;
+}
+
+async function doScan() {
+  hideErr();
+  var btn=document.getElementById("rescanBtn");
+  btn.textContent="\u21BB scanning\u2026";
+  btn.classList.add("spin");
+  document.getElementById("results").innerHTML='<div class="loading">\u21BB fetching live Polymarket data\u2026</div>';
+  document.getElementById("subline").textContent="scanning\u2026";
+
+  try {
+    var allEvents=[];
+    // Fetch 3 pages = 300 markets by volume
+    for(var off=0;off<300;off+=100) {
+      var page=await fetchPage(off);
+      if(!page||!page.length) break;
+      allEvents=allEvents.concat(page);
+      if(page.length<100) break;
+    }
+
+    if(!allEvents.length) {
+      showErr("Network error \u2014 could not reach Polymarket API from this viewer. Ask Claude to rescan in the chat instead.");
+      document.getElementById("results").innerHTML="";
+      document.getElementById("subline").textContent="scan failed";
+      return;
+    }
+
+    DATA=processMarkets(allEvents);
+    var now=new Date();
+    var ts=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+    document.getElementById("subline").textContent=DATA.length+" markets \u00b7 live \u00b7 "+ts;
+    render();
+  } catch(e) {
+    showErr("Error: "+e.message);
+    document.getElementById("subline").textContent="scan failed";
+  } finally {
+    btn.textContent="\u21BB RESCAN";
+    btn.classList.remove("spin");
+  }
+}
+
+function render() {
+  var hy=DATA.filter(function(m){return m.sg==="HARD YES";}).length;
+  var y=DATA.filter(function(m){return m.sg==="YES";}).length;
+  var n=DATA.filter(function(m){return m.sg==="NO";}).length;
+  var hn=DATA.filter(function(m){return m.sg==="HARD NO";}).length;
+  document.getElementById("st").textContent=DATA.length;
+  document.getElementById("shy").textContent=hy;
+  document.getElementById("sy").textContent=y;
+  document.getElementById("sn").textContent=n;
+  document.getElementById("shn").textContent=hn;
+  document.getElementById("fhy").textContent="\u26a1 Hard YES ("+hy+")";
+  document.getElementById("fy").textContent="\u2191 YES ("+y+")";
+  document.getElementById("fn").textContent="\u2193 NO ("+n+")";
+  document.getElementById("fhn").textContent="\u26a1 Hard NO ("+hn+")";
+
+  var list=DATA.filter(function(m){
+    return(SIGF==="ALL"||m.sg===SIGF)&&(CATF==="ALL"||m.c===CATF);
+  });
+  if(!list.length){
+    document.getElementById("results").innerHTML="<div style='text-align:center;padding:40px;color:#3a4a65;font-family:monospace'>No markets match filters</div>";
+    return;
+  }
+  var h="";
+  for(var i=0;i<list.length;i++){
+    var m=list[i];
+    var cfg=SC[m.sg]||SC["NEUTRAL"],cc=CC[m.c]||"#6b7280",pos=m.e>=0;
+    var bl=(Math.min(m.m,m.b)*100).toFixed(1),bw=(Math.abs(m.e)*100).toFixed(1);
+    h+='<div class="card" style="border-left-color:'+cc+'" onclick="window.open(\''+esc(m.url)+'\',\'_blank\')">';
+    h+='<div class="crow"><span class="crank">#'+(i+1)+'</span><div class="cbody">';
+    h+='<div class="ctop"><div class="cq">'+esc(m.q)+'</div>';
+    h+='<div class="cbadges"><span class="sig" style="background:'+cfg.bg+';border-color:'+cfg.bo+';color:'+cfg.ec+'">'+m.sg+'</span>';
+    h+='<span style="font-size:8px;font-weight:700;color:'+cc+'">'+m.c+'</span></div></div>';
+    h+='<div class="prices"><div class="pbox"><div class="prow">';
+    h+='<div><div class="plbl">YES price</div><div class="pval">'+m.m.toFixed(2)+'</div><div class="psub">NO: '+(1-m.m).toFixed(2)+'</div></div>';
+    h+='<span style="font-size:11px;color:#3a4a65;padding-bottom:9px">\u2192</span>';
+    h+='<div style="text-align:right"><div class="plbl" style="color:#2563eb">BS fair</div><div class="pval" style="color:#60a5fa">'+m.b.toFixed(2)+'</div><div class="psub">NO: '+(1-m.b).toFixed(2)+'</div></div>';
+    h+='</div><div class="pbar"><div class="pfill" style="left:'+bl+'%;width:'+bw+'%;background:'+(pos?"#00e5a0":"#ff4466")+'"></div>';
+    h+='<div class="ptick" style="left:'+(m.m*100).toFixed(1)+'%;background:#dde4f0"></div>';
+    h+='<div class="ptick" style="left:'+(m.b*100).toFixed(1)+'%;background:#60a5fa"></div></div></div>';
+    h+='<div class="ebox" style="background:'+cfg.bg+';border-color:'+cfg.bo+'">';
+    h+='<div class="elbl" style="color:'+cfg.ec+'">Edge</div>';
+    h+='<div class="eval" style="color:'+cfg.ec+'">'+(pos?"+":"")+(m.e*100).toFixed(1)+'%</div>';
+    h+='<div class="esub" style="color:'+cfg.ec+'">'+cfg.lb+'</div></div></div>';
+    h+='<div class="meta"><div><div class="mlbl">\u03c3</div><div class="mval">'+((m.si||.5)*100).toFixed(0)+'%</div></div>';
+    h+='<div><div class="mlbl">Expires</div><div class="mval">'+fmtT(m.T||.25)+'</div></div>';
+    h+='<div><div class="mlbl">Volume</div><div class="mval">'+fmtVol(m.v)+'</div></div>';
+    h+='</div></div></div></div>';
+  }
+  document.getElementById("results").innerHTML=h;
+}
+
+document.getElementById("sigrow").addEventListener("click",function(e){
+  var b=e.target.closest(".fb");if(!b||!b.dataset.sig)return;
+  document.querySelectorAll("#sigrow .fb").forEach(function(x){x.classList.remove("on");});
+  b.classList.add("on");SIGF=b.dataset.sig;render();
+});
+document.getElementById("catrow").addEventListener("click",function(e){
+  var b=e.target.closest(".fb");if(!b||!b.dataset.cat)return;
+  document.querySelectorAll("#catrow .fb").forEach(function(x){x.classList.remove("on");});
+  b.classList.add("on");CATF=b.dataset.cat;render();
+});
+
+// Auto-scan on load
+doScan();
+</script>
+</body>
+</html>
